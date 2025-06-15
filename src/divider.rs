@@ -242,7 +242,7 @@ where
                 renderer::Quad {
                     bounds: snap(self.divider_bounds(layout.bounds())),
                     border: appearance.border,
-                    shadow: Default::default(),
+                    ..Default::default()
                 },
                 appearance
                     .background

@@ -182,7 +182,7 @@ pub(crate) mod wrapper {
                 iced_core::renderer::Quad {
                     bounds: layout.bounds(),
                     border: appearance.border,
-                    shadow: Default::default(),
+                    ..Default::default()
                 },
                 appearance
                     .background
