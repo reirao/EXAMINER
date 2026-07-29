@@ -1,4 +1,4 @@
 # EXAMINER Launcher
 
-Die grafische Oberflaeche und Kommandozeile fuer EXAMINER. Der Launcher
-verwaltet Exanima-Instanzen, Profile, Mods und deren Ladereihenfolge.
+The graphical interface and command-line application for EXAMINER. The launcher
+manages Exanima installations, profiles, mods, and load order.
