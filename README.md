@@ -19,8 +19,22 @@ interaction and a workflow that can be automated further over time.
 
 ## Building
 
-Git and the Rust toolchain specified in `rust-toolchain.toml` are required.
-Run this command from the project directory:
+Git, the Rust toolchain specified in `rust-toolchain.toml`, and the Microsoft
+Visual Studio 2022 C++ Build Tools with a Windows SDK are required on Windows.
+Clone the repository with its native Detours dependency:
+
+```powershell
+git clone --recurse-submodules https://github.com/reirao/EXAMINER.git
+cd EXAMINER
+```
+
+If the repository was already cloned, initialize the dependency once:
+
+```powershell
+git submodule update --init --recursive
+```
+
+Then build the project from a Visual Studio Developer PowerShell:
 
 ```powershell
 cargo build

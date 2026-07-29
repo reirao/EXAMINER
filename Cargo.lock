@@ -2421,7 +2421,7 @@ dependencies = [
 [[package]]
 name = "iced_table"
 version = "0.13.0"
-source = "git+https://github.com/ProffDea/iced_table.git?branch=dev#bad5c408d79aa438a8273344e8138a3313188051"
+source = "git+https://github.com/reirao/EXAMINER.git?branch=iced-table#89a4f04cebfdf85095fde7981f601c5d139bee1a"
 dependencies = [
  "iced_core",
  "iced_drop",

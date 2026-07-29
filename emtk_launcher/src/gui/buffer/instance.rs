@@ -217,6 +217,21 @@ impl iced_table::WithId for Row {
 	}
 }
 
+fn priority_after_reorder(priority: u32, from: usize, to: usize) -> u32 {
+	let from = from as u32;
+	let to = to as u32;
+
+	if priority == from {
+		to
+	} else if from < to && priority > from && priority <= to {
+		priority - 1
+	} else if from > to && priority >= to && priority < from {
+		priority + 1
+	} else {
+		priority
+	}
+}
+
 /// The view state of the load order.
 #[derive(Debug, Clone)]
 pub struct Table {
@@ -959,20 +974,8 @@ impl Instance {
 					.load_order_mut()
 					.iter_mut()
 					.for_each(move |(_, plugin)| {
-						if plugin.priority == row_index as u32 {
-							plugin.priority = to_index as u32;
-						} else if row_index < to_index
-							&& plugin.priority >= row_index as u32
-							&& plugin.priority <= to_index as u32
-							&& plugin.priority != 0
-						{
-							plugin.priority -= 1;
-						} else if row_index > to_index
-							&& plugin.priority <= row_index as u32
-							&& plugin.priority >= to_index as u32
-						{
-							plugin.priority += 1;
-						}
+						plugin.priority =
+							priority_after_reorder(plugin.priority, row_index, to_index);
 					});
 				self.table = Table::new(&self.inner);
 				let path = self.inner.profile.path().clone();
@@ -1571,5 +1574,38 @@ pub fn view_slider<'a>(plugin_slider: plugin::Slider) -> Element<'a, Message> {
 
 pub fn view_text_input<'a>(plugin_input: plugin::TextInput) -> Element<'a, Message> {
 	Space::new(Fill, Fill).into()
+}
+
+#[cfg(test)]
+mod tests {
+	use super::priority_after_reorder;
+
+	fn reorder(priorities: &[u32], from: usize, to: usize) -> Vec<u32> {
+		priorities
+			.iter()
+			.map(|priority| priority_after_reorder(*priority, from, to))
+			.collect()
+	}
+
+	#[test]
+	fn moves_first_row_down_and_closes_the_gap() {
+		assert_eq!(reorder(&[0, 1, 2, 3], 0, 2), [2, 0, 1, 3]);
+	}
+
+	#[test]
+	fn moves_last_row_up_and_opens_the_target_slot() {
+		assert_eq!(reorder(&[0, 1, 2, 3], 3, 1), [0, 2, 3, 1]);
+	}
+
+	#[test]
+	fn keeps_priorities_when_row_stays_in_place() {
+		assert_eq!(reorder(&[0, 1, 2], 1, 1), [0, 1, 2]);
+	}
+
+	#[test]
+	fn leaves_rows_outside_the_drag_range_unchanged() {
+		assert_eq!(priority_after_reorder(4, 1, 2), 4);
+		assert_eq!(priority_after_reorder(0, 1, 2), 0);
+	}
 }
 
