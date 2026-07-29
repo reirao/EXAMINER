@@ -242,7 +242,7 @@ impl ImguiRenderLoop for RenderLoop {
 					) {
 						ui.table_next_column();
 
-						ui.text("Exanima Modding Toolkit");
+						ui.text("EXAMINER Framework");
 						ui.text(format!("Version: {}", EMTK_FRAMEWORK_VERSION));
 						ui.text(format!("Authors: {}", &*EMTK_FRAMEWORK_AUTHORS));
 						ui.text(format!("License: {}", EMTK_FRAMEWORK_AUTHORS));
@@ -267,7 +267,7 @@ impl ImguiRenderLoop for RenderLoop {
 				});
 		}
 
-		ui.window("Exanima Modding Toolkit")
+		ui.window("EXAMINER Framework")
 			.position([0., 0.], imgui::Condition::FirstUseEver)
 			.size([650., 400.], imgui::Condition::FirstUseEver)
 			.menu_bar(true)

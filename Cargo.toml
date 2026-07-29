@@ -14,11 +14,11 @@ default-members = ["emtk_launcher"]
 
 [workspace.package]
 version = "0.1.0-dev"
-authors = ["Megumin <megumin@megu.dev>", "ProffDea <deatea@riseup.net>"]
+authors = ["reirao", "Megumin <megumin@megu.dev>", "ProffDea <deatea@riseup.net>"]
 edition = "2024"
-documentation = "https://exanimamodding.codeberg.page/Book"
-homepage = "https://exanimamodding.codeberg.page/Book"
-repository = "https://codeberg.org/ExanimaModding/Toolkit"
+documentation = "https://github.com/reirao/EXAMINER#readme"
+homepage = "https://github.com/reirao/EXAMINER"
+repository = "https://github.com/reirao/EXAMINER"
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]

@@ -1,43 +1,51 @@
-# Toolkit
+# EXAMINER
 
-Unofficial modding support for [Exanima](https://store.steampowered.com/app/362490/Exanima/) made in Rust.
+EXAMINER ist unser experimentelles Modding-Werkzeug fuer
+[Exanima](https://store.steampowered.com/app/362490/Exanima/). Es verwaltet
+Spielinstanzen, Profile, Mods und deren Ladereihenfolge. Unser Schwerpunkt liegt
+auf direkter, kontrollierbarer Bedienung und einem Workflow, der sich spaeter
+weiter automatisieren laesst.
 
 > [!WARNING]
-> Emtk is experimental software and is still in very early stages of
-> development. The current state is subject to change drastically over the course
-> of its lifecycle.
+> EXAMINER befindet sich in aktiver Entwicklung. Lege vor Modding-Versuchen
+> Sicherungen deiner Spielstaende und Spieldateien an.
 
-## Goals
+## Aktueller Stand
 
-- **Simple**: Make installing and making mods easy
-- **Documented**: Making a mod should not be a mystery
-- **Adaptable**: New game updates should be easy to migrate to
-- **Cross-Platform**: Steam deck along with installation methods such as Steam
-Workshop should be possible
+- Exanima-Instanzen und Profile verwalten
+- Mods aktivieren, deaktivieren und sortieren
+- Verbesserte Drag-Steuerung mit sichtbarem Griff, laufender Rueckmeldung,
+  vertikaler Begrenzung und Abbruchbehandlung
+- Asset- und Framework-Werkzeuge aus der Emtk-Basis
 
-## Installation
+## Bauen
 
-Head over to the [latest release](https://codeberg.org/ExanimaModding/Toolkit/releases) for a build to download.
+Voraussetzungen sind Git und die in `rust-toolchain.toml` festgelegte
+Rust-Toolchain. Danach im Projektordner:
 
-## Contributing / Feedback
+```powershell
+cargo build
+```
 
-We have a [discord](https://discord.gg/Vavq7zG4Vb) to talk about this project
-and anything Exanima related. Any feedback would be appreciated!
+Der Launcher ist das Standardmitglied des Cargo-Workspaces. Die angepasste
+`iced_table`-Komponente liegt reproduzierbar im Branch `iced-table` dieses
+Repositories und wird von Cargo automatisch geladen.
 
-## Community
+## Projektstruktur
 
-These are communities worth mentioning that are outside of this organization and
-its projects.
+- `emtk_launcher`: Launcher und Benutzeroberflaeche
+- `emtk_core`: Instanzen, Profile, Mods und gemeinsame Logik
+- `emtk_framework`: Laufzeit-Framework und Plugin-Unterstuetzung
+- `emtk_asset`: Lesen und Schreiben von Exanima-Assets
+- `crates/detours`: native Hooking-Abhaengigkeit
 
-- [Exanima Modding Discord (Council of Conservers) ](https://discord.gg/pfZdW9AUbM)  
-- [Official Bare Mettle Discord](https://discord.gg/XxNhHtwPjE)  
+## Herkunft und Lizenz
 
-## Disclaimer
+EXAMINER baut auf dem freien
+[Exanima Modding Toolkit](https://codeberg.org/ExanimaModding/Toolkit) auf. Die
+urspruenglichen Autoren und ihre Git-Historie bleiben erhalten. Unsere
+EXAMINER-Aenderungen werden in diesem Repository weiterentwickelt.
 
-This Exanima Modding Organization and its repositories such as this Toolkit repo are
-***not*** affiliated with Bare Mettle Entertainment, Exanima or Sui Generis
-
-## License
-
-Emtk is dual-licensed under Apache 2.0 or MIT.
-
+Der Code steht gemaess den vorhandenen Lizenzdateien unter MIT oder Apache-2.0.
+EXAMINER ist nicht mit Bare Mettle Entertainment, Exanima oder Sui Generis
+verbunden.

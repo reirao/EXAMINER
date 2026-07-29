@@ -913,7 +913,7 @@ impl App {
 
 	#[instrument(level = "trace")]
 	fn title(&self) -> String {
-		let mut title = format!("Exanima Modding Toolkit v{}", env!("CARGO_PKG_VERSION"));
+		let mut title = format!("EXAMINER v{}", env!("CARGO_PKG_VERSION"));
 
 		if let Some(tab_manager) = self.tab_managers.get(self.focus)
 			&& let Some(tab_focus) = &tab_manager.focus

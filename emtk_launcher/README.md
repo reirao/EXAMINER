@@ -1,3 +1,4 @@
-# Toolkit
+# EXAMINER Launcher
 
-Client which bundles both the CLI and GUI together.
+Die grafische Oberflaeche und Kommandozeile fuer EXAMINER. Der Launcher
+verwaltet Exanima-Instanzen, Profile, Mods und deren Ladereihenfolge.
