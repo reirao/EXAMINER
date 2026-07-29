@@ -49,6 +49,8 @@ pub mod table {
             on_column_release: None,
             on_row_click: None,
             on_row_drop: None,
+            on_row_drag: None,
+            on_row_drag_cancel: None,
             min_width: 0.0,
             min_column_width: 4.0,
             divider_width: 2.0,
@@ -106,6 +108,8 @@ pub mod table {
         on_column_release: Option<Message>,
         on_row_click: Option<fn(usize) -> Message>,
         on_row_drop: Option<fn(Point, Rectangle) -> Message>,
+        on_row_drag: Option<fn(Point, Rectangle) -> Message>,
+        on_row_drag_cancel: Option<Message>,
         min_width: f32,
         min_column_width: f32,
         divider_width: f32,
@@ -150,6 +154,22 @@ pub mod table {
         pub fn on_row_drop(self, on_drop: fn(Point, Rectangle) -> Message) -> Self {
         	Self {
         		on_row_drop: Some(on_drop),
+        		..self
+        	}
+        }
+
+        /// Sets the message that will be produced when a [`Row`] is dragged.
+        pub fn on_row_drag(self, on_drag: fn(Point, Rectangle) -> Message) -> Self {
+        	Self {
+        		on_row_drag: Some(on_drag),
+        		..self
+        	}
+        }
+
+        /// Sets the message that will be produced when dragging a [`Row`] is canceled.
+        pub fn on_row_drag_canceled(self, on_drag_cancel: Message) -> Self {
+        	Self {
+        		on_row_drag_cancel: Some(on_drag_cancel),
         		..self
         	}
         }
@@ -229,6 +249,8 @@ pub mod table {
                 on_column_release,
                 on_row_click,
                 on_row_drop,
+                on_row_drag,
+                on_row_drag_cancel,
                 min_width,
                 min_column_width,
                 divider_width,
@@ -289,24 +311,32 @@ pub mod table {
                     row_index,
                 );
 
+                let mut row = droppable(content).id(_row.id()).drag_hide(true).drag_mode(
+                    false,
+                    true,
+                );
+
+                if let Some(on_row_drag) = on_row_drag {
+                    row = row.on_drag(on_row_drag);
+                }
+
                 let Some(on_row_click) = on_row_click else {
-                	let Some(on_row_drop) = on_row_drop else {
-                		return content
-                	};
-                	return droppable(content)
-                		.id(_row.id())
-                		.drag_hide(true)
-                		.on_drop(on_row_drop)
-                		.into();
+                    let Some(on_row_drop) = on_row_drop else {
+                    	return row.into();
+                    };
+                	return row.on_drop(on_row_drop).into();
                 };
-                let drop = droppable(content)
-                	.id(_row.id())
-                	.drag_hide(true)
-                	.on_click((on_row_click)(row_index));
+
+                row = row.on_click((on_row_click)(row_index));
+
+                if let Some(on_row_drag_cancel) = on_row_drag_cancel.clone() {
+                    row = row.on_cancel(on_row_drag_cancel);
+                }
+
                 let Some(on_row_drop) = on_row_drop else {
-                	return drop.into();
+                    return row.into();
                 };
-                drop.on_drop(on_row_drop).into()               
+                row.on_drop(on_row_drop).into()
             })))
             .id(body)
             .on_scroll(move |viewport| {
