@@ -41,6 +41,7 @@ pub enum Action {
 /// The types of columns found in the load order table.
 #[derive(Debug, Clone)]
 pub enum ColumnKind {
+	Handle,
 	Name,
 	Version,
 	Priority,
@@ -58,6 +59,7 @@ impl Column {
 	#[instrument(level = "trace")]
 	pub fn new(kind: ColumnKind) -> Self {
 		let width = match kind {
+			ColumnKind::Handle => 34.,
 			ColumnKind::Name => 400.,
 			ColumnKind::Version => 150.,
 			ColumnKind::Priority => 60.,
@@ -77,6 +79,7 @@ impl<'a> table::Column<'a, Message, Theme, Renderer> for Column {
 	#[instrument(level = "trace")]
 	fn header(&'a self, _col_index: usize) -> Element<'a, Message> {
 		let content = match self.kind {
+			ColumnKind::Handle => "Order",
 			ColumnKind::Name => "Name",
 			ColumnKind::Version => "Version",
 			ColumnKind::Priority => "Priority",
@@ -90,6 +93,18 @@ impl<'a> table::Column<'a, Message, Theme, Renderer> for Column {
 		let plugin_valid = row.plugin.display_name.is_some() && row.plugin.version.is_some();
 
 		let content: Element<_> = match self.kind {
+			ColumnKind::Handle => tooltip(
+				container(
+					icon::menu()
+						.size(16)
+						.center(),
+				)
+				.align_x(Alignment::Center)
+				.align_y(Alignment::Center),
+				text("Drag row"),
+				tooltip::Position::Top,
+			)
+			.into(),
 			ColumnKind::Name => {
 				let content = tooltip(
 					row![
@@ -166,6 +181,7 @@ impl<'a> table::Column<'a, Message, Theme, Renderer> for Column {
 				)
 				.into(),
 			),
+			ColumnKind::Handle => None,
 			ColumnKind::Version => None,
 			ColumnKind::Priority => Some(
 				container(text(rows.len()))
@@ -243,6 +259,7 @@ impl Default for Table {
 		Self {
 			body: scrollable::Id::unique(),
 			columns: vec![
+				Column::new(ColumnKind::Handle),
 				Column::new(ColumnKind::Name),
 				Column::new(ColumnKind::Version),
 				Column::new(ColumnKind::Priority),
@@ -1098,6 +1115,8 @@ impl Instance {
 			)
 			.on_column_resize(Message::TableResizing, Message::TableResized)
 			.on_row_click(Message::ClickedRow)
+			.on_row_drag(Message::DraggedRow)
+			.on_row_drag_canceled(Message::DraggedRowCanceled)
 			.on_row_drop(Message::DroppedRow)
 			.min_width(size.width)
 			.into()
@@ -1553,3 +1572,4 @@ pub fn view_slider<'a>(plugin_slider: plugin::Slider) -> Element<'a, Message> {
 pub fn view_text_input<'a>(plugin_input: plugin::TextInput) -> Element<'a, Message> {
 	Space::new(Fill, Fill).into()
 }
+
