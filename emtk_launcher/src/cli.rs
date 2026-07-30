@@ -1,7 +1,7 @@
 //! The command line interface for the end-user to manage mods for their game
 //! install
 
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 use clap::{Parser, Subcommand};
 use emtk_core::prelude::*;
@@ -141,6 +141,12 @@ impl InstanceCommands {
 			.build()
 			.await
 			.unwrap();
+		unsafe {
+			env::set_var(
+				"EMTK_LOAD_ORDER_PATH",
+				instance.profile().path().join(Profile::LOAD_ORDER_TOML),
+			);
+		}
 		crate::launch(instance.path().as_path()).unwrap();
 	}
 
