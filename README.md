@@ -1,74 +1,84 @@
 # EXAMINER
 
-EXAMINER is our experimental modding toolkit for
-[Exanima](https://store.steampowered.com/app/362490/Exanima/). It manages game
-installations, profiles, mods, and load order. Our focus is direct, controllable
-interaction and a workflow that can be automated further over time.
+EXAMINER is an open-source experimental mod project for
+[Exanima](https://store.steampowered.com/app/362490/Exanima/). We use it to
+explore different aspects of the game, prototype new interactions, and learn
+what is possible within Exanima's systems.
+
+This is not intended to replace the Exanima Modding Toolkit. EXAMINER uses
+EMTK as its technical foundation for launching the game, loading plugins,
+scanning signatures, and applying hooks. Improvements that are generally useful
+to EMTK should be contributed upstream whenever possible.
 
 > [!WARNING]
-> EXAMINER is under active development. Back up your save data and game files
-> before experimenting with mods.
+> EXAMINER is early experimental software. Features may be incomplete,
+> unstable, or incompatible with future Exanima updates. Back up your saves and
+> game files before testing anything.
 
-## Current capabilities
+## First experiment: object interaction
 
-- Manage Exanima installations and profiles
-- Enable, disable, and reorder mods
-- Improved drag controls with a visible handle, continuous feedback, vertical
-  movement constraints, and cancellation handling
-- Asset and framework tools inherited from the Emtk foundation
+Our first gameplay experiment focuses on Exanima's in-game object dragging. We
+want to investigate whether we can make it:
 
-## Building
+- stronger, including support for heavier physical objects
+- more precise and controllable
+- usable at a more practical range
+- capable of grabbing a wider variety of world objects
+- better at positioning and rotating objects
+- stable when grabbing, releasing, or cancelling an interaction
+
+This experiment has not been implemented yet. The current repository contains
+the working injection, framework, build, and test foundation required to begin
+identifying and hooking the relevant functions in Exanima 0.9.5.
+
+## Future experiments
+
+EXAMINER is deliberately broader than one feature. Possible experiments may
+include physics, interaction, controls, quality-of-life changes, gameplay
+systems, debugging tools, or other ideas that help us understand and extend the
+game. Each experiment should be documented, optional, and testable on its own.
+
+## Building the development foundation
 
 Git, the Rust toolchain specified in `rust-toolchain.toml`, and the Microsoft
 Visual Studio 2022 C++ Build Tools with a Windows SDK are required on Windows.
-Clone the repository with its native Detours dependency:
 
 ```powershell
 git clone --recurse-submodules https://github.com/reirao/EXAMINER.git
 cd EXAMINER
+cargo build
 ```
 
-If the repository was already cloned, initialize the dependency once:
+If the repository was cloned without submodules, initialize Detours once:
 
 ```powershell
 git submodule update --init --recursive
 ```
 
-Then build the project from a Visual Studio Developer PowerShell:
+## Repository foundation
 
-```powershell
-cargo build
-```
+- `emtk_launcher`: starts Exanima and injects the framework
+- `emtk_framework`: runtime, plugin loading, memory scanning, and hooks
+- `emtk_core`: instances, profiles, and shared infrastructure
+- `emtk_asset`: Exanima asset research and tooling
+- `crates/detours`: native process injection and function detouring
 
-The launcher is the default Cargo workspace member. Our modified `iced_table`
-component is stored reproducibly in this repository's `iced-table` branch and
-is fetched automatically by Cargo.
+These components originate from EMTK and remain visible so the experimental
+work can be developed transparently. Gameplay experiments will be kept separate
+from general framework changes.
 
-## Project structure
-
-- `emtk_launcher`: launcher and user interface
-- `emtk_core`: installations, profiles, mods, and shared logic
-- `emtk_framework`: runtime framework and plugin support
-- `emtk_asset`: Exanima asset reading and writing
-- `crates/detours`: native hooking dependency
-
-## Public distribution policy
+## Public development policy
 
 This repository contains tooling and original source changes only. Do not add
 Exanima executables, game archives, extracted assets, save files, access keys,
-or other proprietary Bare Mettle content. Users must own a legitimate copy of
-Exanima and supply their own local game installation.
-
-Community access or an invitation does not by itself grant intellectual
-property rights. Obtain explicit written permission before distributing any
-third-party assets or content whose licence is unclear.
+or other proprietary Bare Mettle content. Testers must own Exanima and provide
+their own local game installation.
 
 ## Origin and licence
 
 EXAMINER is based on the open-source
-[Exanima Modding Toolkit](https://codeberg.org/ExanimaModding/Toolkit). The
-original authors and Git history remain credited. EXAMINER-specific changes are
-developed in this repository.
+[Exanima Modding Toolkit](https://codeberg.org/ExanimaModding/Toolkit). Its
+original authors, licences, and Git history remain credited.
 
 The source code is available under MIT or Apache-2.0 as described by the
 existing licence files. EXAMINER is an unofficial community project and is not
