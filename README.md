@@ -27,9 +27,18 @@ want to investigate whether we can make it:
 - better at positioning and rotating objects
 - stable when grabbing, releasing, or cancelling an interaction
 
-This experiment has not been implemented yet. The current repository contains
-the working injection, framework, build, and test foundation required to begin
-identifying and hooking the relevant functions in Exanima 0.9.5.
+The gameplay modification itself has not been implemented yet. The current
+repository contains the working injection, framework, build, test foundation,
+and in-game input telemetry required to identify and hook the relevant
+functions in Exanima 0.9.5.
+
+### Diagnostic controls
+
+- `F2`: show or hide the EXAMINER diagnostic overlay
+- `F6`: arm or disarm experiments; telemetry remains observe-only for now
+
+The overlay reports mouse-button and modifier-key state plus a captured input
+event counter. It does not modify gameplay or physics values yet.
 
 ## Future experiments
 

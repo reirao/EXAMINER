@@ -202,8 +202,8 @@ unsafe extern "C" fn main() {
 		}
 	};
 
-	// TODO: port plugin configs to emtk_core::plugin::Manifest
-	// gui::inject_gui();
+	// EXAMINER diagnostics and experiment controls.
+	internal::gui::inject_gui();
 
 	// let plugin_configs = match read_plugin_configs() {
 	// 	Ok(configs) => configs,

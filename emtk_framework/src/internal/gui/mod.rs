@@ -1,12 +1,18 @@
 mod components;
 
-use std::sync::LazyLock;
+use std::sync::{
+	LazyLock,
+	atomic::{AtomicBool, AtomicU64, Ordering},
+};
 
 use hudhook::*;
 use tracing::error;
 use windows::Win32::UI::{
 	Input::KeyboardAndMouse,
-	WindowsAndMessaging::{GetCursorInfo, CURSORINFO, CURSOR_SHOWING, WM_KEYDOWN, WM_KEYUP},
+	WindowsAndMessaging::{
+		CURSOR_SHOWING, CURSORINFO, GetCursorInfo, WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDOWN,
+		WM_LBUTTONUP, WM_RBUTTONDOWN, WM_RBUTTONUP,
+	},
 };
 
 use crate::plugins::manager::PluginManager;
@@ -49,8 +55,16 @@ pub trait Widget {
 	fn initialize(&mut self, _ctx: &mut imgui::Context, _render_context: &mut dyn RenderContext) {}
 }
 
-static mut VISIBILITY_TOGGLE_KEY_DOWN: bool = false;
-static mut VISIBILITY_TOGGLED: bool = false;
+static VISIBILITY_TOGGLE_KEY_DOWN: AtomicBool = AtomicBool::new(false);
+static VISIBILITY_TOGGLED: AtomicBool = AtomicBool::new(false);
+static EXPERIMENT_TOGGLE_KEY_DOWN: AtomicBool = AtomicBool::new(false);
+static EXPERIMENT_TOGGLED: AtomicBool = AtomicBool::new(false);
+static LEFT_MOUSE_DOWN: AtomicBool = AtomicBool::new(false);
+static RIGHT_MOUSE_DOWN: AtomicBool = AtomicBool::new(false);
+static CTRL_DOWN: AtomicBool = AtomicBool::new(false);
+static SHIFT_DOWN: AtomicBool = AtomicBool::new(false);
+static ALT_DOWN: AtomicBool = AtomicBool::new(false);
+static INPUT_EVENTS: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Default)]
 pub struct RenderLoop {
@@ -61,6 +75,7 @@ pub struct RenderLoop {
 }
 
 pub struct AppState {
+	experiment_enabled: bool,
 	visible: bool,
 	show_cursor: bool,
 	show_demo_window: bool,
@@ -70,6 +85,7 @@ pub struct AppState {
 impl Default for AppState {
 	fn default() -> Self {
 		Self {
+			experiment_enabled: false,
 			#[cfg(debug_assertions)]
 			visible: true,
 			#[cfg(not(debug_assertions))]
@@ -98,7 +114,7 @@ impl ImguiRenderLoop for RenderLoop {
 		// Maybe another font, or something else? FreeType is an option but could be annoying to implement.
 		let fonts = ctx.fonts();
 		fonts.add_font(&[imgui::FontSource::TtfData {
-			data: include_bytes!("../../../../../assets/fonts/Lora-Regular.ttf"),
+			data: include_bytes!("../../../../assets/fonts/Lora-Regular.ttf"),
 			size_pixels: 20.0,
 			config: Some(imgui::FontConfig {
 				size_pixels: 20.0,
@@ -126,7 +142,7 @@ impl ImguiRenderLoop for RenderLoop {
 
 		let image = image::load(
 			std::io::Cursor::new(include_bytes!(
-				"../../../../../assets/images/corro-211x172.png"
+				"../../../../assets/images/corro-211x172.png"
 			)),
 			image::ImageFormat::Png,
 		)
@@ -154,23 +170,29 @@ impl ImguiRenderLoop for RenderLoop {
 		_wparam: windows::Win32::Foundation::WPARAM,
 		_lparam: windows::Win32::Foundation::LPARAM,
 	) {
-		unsafe {
-			match umsg {
-				WM_KEYDOWN => {
-					// If key is F2 (the display toggle key)
-					if _wparam.0 == KeyboardAndMouse::VK_F2.0 as _ {
-						VISIBILITY_TOGGLE_KEY_DOWN = true;
-					}
+		match umsg {
+			WM_LBUTTONDOWN => LEFT_MOUSE_DOWN.store(true, Ordering::Relaxed),
+			WM_LBUTTONUP => LEFT_MOUSE_DOWN.store(false, Ordering::Relaxed),
+			WM_RBUTTONDOWN => RIGHT_MOUSE_DOWN.store(true, Ordering::Relaxed),
+			WM_RBUTTONUP => RIGHT_MOUSE_DOWN.store(false, Ordering::Relaxed),
+			WM_KEYDOWN | WM_KEYUP => {
+				let down = umsg == WM_KEYDOWN;
+				let key = _wparam.0 as u16;
+				if key == KeyboardAndMouse::VK_F2.0 {
+					VISIBILITY_TOGGLE_KEY_DOWN.store(down, Ordering::Relaxed);
+				} else if key == KeyboardAndMouse::VK_F6.0 {
+					EXPERIMENT_TOGGLE_KEY_DOWN.store(down, Ordering::Relaxed);
+				} else if key == KeyboardAndMouse::VK_CONTROL.0 {
+					CTRL_DOWN.store(down, Ordering::Relaxed);
+				} else if key == KeyboardAndMouse::VK_SHIFT.0 {
+					SHIFT_DOWN.store(down, Ordering::Relaxed);
+				} else if key == KeyboardAndMouse::VK_MENU.0 {
+					ALT_DOWN.store(down, Ordering::Relaxed);
 				}
-				WM_KEYUP => {
-					// If key is F2 (the display toggle key)
-					if _wparam.0 == KeyboardAndMouse::VK_F2.0 as _ {
-						VISIBILITY_TOGGLE_KEY_DOWN = false;
-					}
-				}
-				_ => {}
 			}
+			_ => return,
 		}
+		INPUT_EVENTS.fetch_add(1, Ordering::Relaxed);
 	}
 
 	fn before_render<'a>(
@@ -179,13 +201,18 @@ impl ImguiRenderLoop for RenderLoop {
 		_render_context: &'a mut dyn RenderContext,
 	) {
 		let io = ctx.io_mut();
-		unsafe {
-			if VISIBILITY_TOGGLE_KEY_DOWN && !VISIBILITY_TOGGLED {
-				self.state.visible = !self.state.visible;
-				VISIBILITY_TOGGLED = true;
-			} else if !VISIBILITY_TOGGLE_KEY_DOWN {
-				VISIBILITY_TOGGLED = false;
-			}
+		let visibility_down = VISIBILITY_TOGGLE_KEY_DOWN.load(Ordering::Relaxed);
+		if visibility_down && !VISIBILITY_TOGGLED.swap(visibility_down, Ordering::Relaxed) {
+			self.state.visible = !self.state.visible;
+		} else if !visibility_down {
+			VISIBILITY_TOGGLED.store(false, Ordering::Relaxed);
+		}
+
+		let experiment_down = EXPERIMENT_TOGGLE_KEY_DOWN.load(Ordering::Relaxed);
+		if experiment_down && !EXPERIMENT_TOGGLED.swap(experiment_down, Ordering::Relaxed) {
+			self.state.experiment_enabled = !self.state.experiment_enabled;
+		} else if !experiment_down {
+			EXPERIMENT_TOGGLED.store(false, Ordering::Relaxed);
 		}
 
 		// If the window is not visible, set scale to 0 to disable rendering.
@@ -245,7 +272,7 @@ impl ImguiRenderLoop for RenderLoop {
 						ui.text("EXAMINER Framework");
 						ui.text(format!("Version: {}", EMTK_FRAMEWORK_VERSION));
 						ui.text(format!("Authors: {}", &*EMTK_FRAMEWORK_AUTHORS));
-						ui.text(format!("License: {}", EMTK_FRAMEWORK_AUTHORS));
+						ui.text(format!("License: {}", EMTK_FRAMEWORK_LICENSE));
 
 						if ui.button("View Source") {
 							open::that(EMTK_FRAMEWORK_REPO).unwrap();
@@ -266,6 +293,42 @@ impl ImguiRenderLoop for RenderLoop {
 					ui.text_wrapped("You can press F2 to show/hide the toolkit overlay.");
 				});
 		}
+
+		ui.window("EXAMINER Diagnostics")
+			.position([20., 20.], imgui::Condition::FirstUseEver)
+			.size([360., 230.], imgui::Condition::FirstUseEver)
+			.build(|| {
+				let status = if self.state.experiment_enabled {
+					"ARMED"
+				} else {
+					"SAFE / OBSERVE ONLY"
+				};
+				ui.text(format!("Experiment state: {status}"));
+				ui.text("F2: toggle overlay | F6: arm experiments");
+				ui.separator();
+				ui.text(format!(
+					"Left mouse:  {}",
+					if LEFT_MOUSE_DOWN.load(Ordering::Relaxed) { "DOWN" } else { "up" }
+				));
+				ui.text(format!(
+					"Right mouse: {}",
+					if RIGHT_MOUSE_DOWN.load(Ordering::Relaxed) { "DOWN" } else { "up" }
+				));
+				ui.text(format!(
+					"Ctrl: {}   Shift: {}   Alt: {}",
+					CTRL_DOWN.load(Ordering::Relaxed),
+					SHIFT_DOWN.load(Ordering::Relaxed),
+					ALT_DOWN.load(Ordering::Relaxed),
+				));
+				ui.text(format!(
+					"Captured input events: {}",
+					INPUT_EVENTS.load(Ordering::Relaxed)
+				));
+				ui.separator();
+				ui.text_wrapped(
+					"Telemetry is active. No gameplay or physics values are modified yet.",
+				);
+			});
 
 		ui.window("EXAMINER Framework")
 			.position([0., 0.], imgui::Condition::FirstUseEver)
