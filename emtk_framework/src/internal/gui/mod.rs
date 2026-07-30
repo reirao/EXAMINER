@@ -6,7 +6,7 @@ use std::sync::{
 };
 
 use hudhook::*;
-use tracing::error;
+use tracing::{error, info};
 use windows::Win32::UI::{
 	Input::KeyboardAndMouse,
 	WindowsAndMessaging::{
@@ -108,18 +108,60 @@ impl ImguiRenderLoop for RenderLoop {
 		io.config_input_trickle_event_queue = false;
 
 		let style = ctx.style_mut();
-		style.window_title_align = [0.5, 0.5];
+		style.window_title_align = [0.0, 0.5];
+		style.window_rounding = 0.0;
+		style.child_rounding = 0.0;
+		style.frame_rounding = 0.0;
+		style.popup_rounding = 0.0;
+		style.scrollbar_rounding = 0.0;
+		style.grab_rounding = 0.0;
+		style.tab_rounding = 0.0;
+		style.window_border_size = 1.0;
+		style.child_border_size = 1.0;
+		style.popup_border_size = 1.0;
+		style.frame_border_size = 1.0;
+		style.tab_border_size = 1.0;
+		style.window_padding = [10.0, 9.0];
+		style.frame_padding = [7.0, 4.0];
+		style.item_spacing = [8.0, 5.0];
+		style.colors[imgui::StyleColor::Text as usize] = [0.86, 0.84, 0.80, 1.0];
+		style.colors[imgui::StyleColor::TextDisabled as usize] = [0.35, 0.32, 0.32, 1.0];
+		style.colors[imgui::StyleColor::WindowBg as usize] = [0.015, 0.012, 0.014, 0.96];
+		style.colors[imgui::StyleColor::ChildBg as usize] = [0.025, 0.02, 0.022, 0.94];
+		style.colors[imgui::StyleColor::PopupBg as usize] = [0.02, 0.015, 0.018, 0.98];
+		style.colors[imgui::StyleColor::Border as usize] = [0.38, 0.055, 0.065, 0.9];
+		style.colors[imgui::StyleColor::BorderShadow as usize] = [0.0, 0.0, 0.0, 0.0];
+		style.colors[imgui::StyleColor::FrameBg as usize] = [0.08, 0.025, 0.03, 1.0];
+		style.colors[imgui::StyleColor::FrameBgHovered as usize] = [0.25, 0.035, 0.045, 1.0];
+		style.colors[imgui::StyleColor::FrameBgActive as usize] = [0.46, 0.04, 0.055, 1.0];
+		style.colors[imgui::StyleColor::TitleBg as usize] = [0.055, 0.012, 0.016, 1.0];
+		style.colors[imgui::StyleColor::TitleBgActive as usize] = [0.26, 0.018, 0.026, 1.0];
+		style.colors[imgui::StyleColor::TitleBgCollapsed as usize] = [0.04, 0.01, 0.014, 0.95];
+		style.colors[imgui::StyleColor::MenuBarBg as usize] = [0.035, 0.018, 0.02, 1.0];
+		style.colors[imgui::StyleColor::ScrollbarBg as usize] = [0.015, 0.012, 0.014, 1.0];
+		style.colors[imgui::StyleColor::ScrollbarGrab as usize] = [0.28, 0.035, 0.045, 1.0];
+		style.colors[imgui::StyleColor::ScrollbarGrabHovered as usize] = [0.55, 0.045, 0.06, 1.0];
+		style.colors[imgui::StyleColor::ScrollbarGrabActive as usize] = [0.85, 0.06, 0.075, 1.0];
+		style.colors[imgui::StyleColor::CheckMark as usize] = [0.95, 0.08, 0.09, 1.0];
+		style.colors[imgui::StyleColor::Button as usize] = [0.15, 0.02, 0.027, 1.0];
+		style.colors[imgui::StyleColor::ButtonHovered as usize] = [0.42, 0.035, 0.045, 1.0];
+		style.colors[imgui::StyleColor::ButtonActive as usize] = [0.72, 0.045, 0.06, 1.0];
+		style.colors[imgui::StyleColor::Header as usize] = [0.16, 0.02, 0.028, 1.0];
+		style.colors[imgui::StyleColor::HeaderHovered as usize] = [0.38, 0.03, 0.04, 1.0];
+		style.colors[imgui::StyleColor::HeaderActive as usize] = [0.62, 0.04, 0.055, 1.0];
+		style.colors[imgui::StyleColor::Separator as usize] = [0.38, 0.045, 0.055, 0.9];
+		style.colors[imgui::StyleColor::ResizeGrip as usize] = [0.45, 0.04, 0.055, 0.35];
+		style.colors[imgui::StyleColor::ResizeGripHovered as usize] = [0.8, 0.055, 0.07, 0.7];
+		style.colors[imgui::StyleColor::ResizeGripActive as usize] = [1.0, 0.08, 0.09, 0.95];
+		style.colors[imgui::StyleColor::Tab as usize] = [0.08, 0.015, 0.02, 1.0];
+		style.colors[imgui::StyleColor::TabHovered as usize] = [0.38, 0.03, 0.04, 1.0];
+		style.colors[imgui::StyleColor::TabActive as usize] = [0.28, 0.025, 0.035, 1.0];
 
-		// TODO: Can the font rendering be improved? It looks blurry.
-		// Maybe another font, or something else? FreeType is an option but could be annoying to implement.
 		let fonts = ctx.fonts();
-		fonts.add_font(&[imgui::FontSource::TtfData {
-			data: include_bytes!("../../../../assets/fonts/Lora-Regular.ttf"),
-			size_pixels: 20.0,
+		fonts.add_font(&[imgui::FontSource::DefaultFontData {
 			config: Some(imgui::FontConfig {
-				size_pixels: 20.0,
-				oversample_h: 3,
-				oversample_v: 3,
+				size_pixels: 15.0,
+				pixel_snap_h: true,
 				..Default::default()
 			}),
 		}]);
@@ -171,23 +213,40 @@ impl ImguiRenderLoop for RenderLoop {
 		_lparam: windows::Win32::Foundation::LPARAM,
 	) {
 		match umsg {
-			WM_LBUTTONDOWN => LEFT_MOUSE_DOWN.store(true, Ordering::Relaxed),
-			WM_LBUTTONUP => LEFT_MOUSE_DOWN.store(false, Ordering::Relaxed),
-			WM_RBUTTONDOWN => RIGHT_MOUSE_DOWN.store(true, Ordering::Relaxed),
-			WM_RBUTTONUP => RIGHT_MOUSE_DOWN.store(false, Ordering::Relaxed),
+			WM_LBUTTONDOWN => {
+				LEFT_MOUSE_DOWN.store(true, Ordering::Relaxed);
+				info!("EXAMINER_INPUT left_mouse=down");
+			}
+			WM_LBUTTONUP => {
+				LEFT_MOUSE_DOWN.store(false, Ordering::Relaxed);
+				info!("EXAMINER_INPUT left_mouse=up");
+			}
+			WM_RBUTTONDOWN => {
+				RIGHT_MOUSE_DOWN.store(true, Ordering::Relaxed);
+				info!("EXAMINER_INPUT right_mouse=down");
+			}
+			WM_RBUTTONUP => {
+				RIGHT_MOUSE_DOWN.store(false, Ordering::Relaxed);
+				info!("EXAMINER_INPUT right_mouse=up");
+			}
 			WM_KEYDOWN | WM_KEYUP => {
 				let down = umsg == WM_KEYDOWN;
 				let key = _wparam.0 as u16;
 				if key == KeyboardAndMouse::VK_F2.0 {
 					VISIBILITY_TOGGLE_KEY_DOWN.store(down, Ordering::Relaxed);
+					info!("EXAMINER_INPUT f2={}", if down { "down" } else { "up" });
 				} else if key == KeyboardAndMouse::VK_F6.0 {
 					EXPERIMENT_TOGGLE_KEY_DOWN.store(down, Ordering::Relaxed);
+					info!("EXAMINER_INPUT f6={}", if down { "down" } else { "up" });
 				} else if key == KeyboardAndMouse::VK_CONTROL.0 {
 					CTRL_DOWN.store(down, Ordering::Relaxed);
+					info!("EXAMINER_INPUT ctrl={}", if down { "down" } else { "up" });
 				} else if key == KeyboardAndMouse::VK_SHIFT.0 {
 					SHIFT_DOWN.store(down, Ordering::Relaxed);
+					info!("EXAMINER_INPUT shift={}", if down { "down" } else { "up" });
 				} else if key == KeyboardAndMouse::VK_MENU.0 {
 					ALT_DOWN.store(down, Ordering::Relaxed);
+					info!("EXAMINER_INPUT alt={}", if down { "down" } else { "up" });
 				}
 			}
 			_ => return,
@@ -294,17 +353,26 @@ impl ImguiRenderLoop for RenderLoop {
 				});
 		}
 
-		ui.window("EXAMINER Diagnostics")
+		ui.window("EXAMINER // SIGNAL MONITOR")
 			.position([20., 20.], imgui::Condition::FirstUseEver)
-			.size([360., 230.], imgui::Condition::FirstUseEver)
+			.size([390., 245.], imgui::Condition::FirstUseEver)
 			.build(|| {
 				let status = if self.state.experiment_enabled {
 					"ARMED"
 				} else {
 					"SAFE / OBSERVE ONLY"
 				};
-				ui.text(format!("Experiment state: {status}"));
-				ui.text("F2: toggle overlay | F6: arm experiments");
+				ui.text_colored([0.92, 0.06, 0.075, 1.0], "OS-0 // INTERACTION BUS");
+				ui.separator();
+				ui.text_colored(
+					if self.state.experiment_enabled {
+						[1.0, 0.07, 0.08, 1.0]
+					} else {
+						[0.52, 0.18, 0.18, 1.0]
+					},
+					format!("[ SYSTEM ]  {status}"),
+				);
+				ui.text_disabled("F2  DISPLAY BUS   //   F6  ARM EXPERIMENTS");
 				ui.separator();
 				ui.text(format!(
 					"Left mouse:  {}",
@@ -325,12 +393,11 @@ impl ImguiRenderLoop for RenderLoop {
 					INPUT_EVENTS.load(Ordering::Relaxed)
 				));
 				ui.separator();
-				ui.text_wrapped(
-					"Telemetry is active. No gameplay or physics values are modified yet.",
-				);
+				ui.text_colored([0.58, 0.06, 0.07, 1.0], "----------------------------------------");
+				ui.text_wrapped("SIGNAL CAPTURE ACTIVE // PHYSICS WRITE BUS DISCONNECTED");
 			});
 
-		ui.window("EXAMINER Framework")
+		ui.window("EXAMINER // CONTROL DECK")
 			.position([0., 0.], imgui::Condition::FirstUseEver)
 			.size([650., 400.], imgui::Condition::FirstUseEver)
 			.menu_bar(true)
