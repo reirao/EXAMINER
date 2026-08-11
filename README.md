@@ -27,10 +27,28 @@ want to investigate whether we can make it:
 - better at positioning and rotating objects
 - stable when grabbing, releasing, or cancelling an interaction
 
-The gameplay modification itself has not been implemented yet. The current
-repository contains the working injection, framework, build, test foundation,
-and in-game input telemetry required to identify and hook the relevant
-functions in Exanima 0.9.5.
+The gameplay modification itself has not been implemented yet. We are currently
+building and validating the observation layer required to identify the real
+selection and physics functions instead of guessing at offsets or presenting a
+cosmetic change as a gameplay mod.
+
+## What works today
+
+The current development build provides:
+
+- an EMTK-based launcher that starts Exanima and injects `emtk_framework`
+- an in-game OpenGL3/ImGui diagnostic overlay
+- safe observe-only and explicitly armed experiment states
+- persistent framework logs under
+  `%APPDATA%\exanima-modding-toolkit\log\emtk_framework.log.*`
+- numbered drag sessions with `start`, `move`, and `end` phases
+- cursor coordinates and per-event `dx`/`dy` movement
+- cumulative pixel distance for every drag session
+- debounced left/right mouse and `Ctrl`, `Shift`, and `Alt` state telemetry
+- a working native Windows build using Rust, Detours, MSVC, and the Windows SDK
+
+The telemetry is observational. It currently does **not** identify the selected
+world object, read object mass, alter interaction range, or change forces.
 
 ### Diagnostic controls
 
@@ -38,7 +56,56 @@ functions in Exanima 0.9.5.
 - `F6`: arm or disarm experiments; telemetry remains observe-only for now
 
 The overlay reports mouse-button and modifier-key state plus a captured input
-event counter. It does not modify gameplay or physics values yet.
+event counter. The persistent log contains the more detailed drag-session data.
+`F6` currently changes experiment state only; it does not modify gameplay or
+physics values.
+
+## Current research results
+
+We have built the modified framework successfully and completed live Exanima
+runs with it. Injection was confirmed by the `Main Hook Running` and
+`Running Original Program Entrypoint` markers. A recent controlled session
+recorded 37 drag attempts, including complete movement traces and modifier
+transitions. This established that the sensor can distinguish stationary or
+failed attempts (`0 px`) from real cursor-driven drags and can compare movement
+distance across repeated interactions.
+
+The run also exposed two limitations that we are keeping visible:
+
+- input telemetry alone cannot tell us which Exanima object was under the
+  cursor or whether the game accepted it as a physical interaction
+- Hudhook's OpenGL3 renderer repeatedly reports `Insufficient display size` at
+  `3440x1440` when the overlay is toggled, so overlay rendering needs a separate
+  compatibility fix even though persistent telemetry continues to work
+
+x64dbg and Ghidra have been prepared locally for controlled dynamic and static
+analysis. We have confirmed that x64dbg can attach to the EMTK-launched Exanima
+process. No permanent patch, guessed address, or game binary modification has
+been committed.
+
+## Planned work
+
+The path from diagnostics to the first real mod is intentionally staged:
+
+1. Reduce overlay/log noise and fix the ultrawide OpenGL3 display-size issue.
+2. Add explicit test markers so light, heavy, and rejected objects can be
+   correlated with individual drag sessions.
+3. Use controlled x64dbg runs to identify the input-to-interaction call path
+   while dragging one known movable object.
+4. Use Ghidra and EMTK's signature scanner to replace temporary addresses with
+   update-tolerant signatures and documented function hypotheses.
+5. Observe object selection, interaction range, mass/weight response, applied
+   force, release, and cancellation without changing them.
+6. Implement the smallest reversible experiment: a configurable drag-strength
+   multiplier guarded by the armed state.
+7. Add range and object-eligibility experiments only after the force hook is
+   stable, then investigate rotation and precision controls.
+8. Keep every gameplay experiment optional, logged, and easy to disable; move
+   generally useful framework improvements upstream to EMTK where appropriate.
+
+The first milestone is not "drag anything" by assertion. It is a reproducible
+hook that changes one verified force parameter for one verified interaction,
+with an observe-only fallback and enough evidence to explain what changed.
 
 ## Future experiments
 

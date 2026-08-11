@@ -2,7 +2,7 @@ mod components;
 
 use std::sync::{
 	LazyLock,
-	atomic::{AtomicBool, AtomicU64, Ordering},
+	atomic::{AtomicBool, AtomicI32, AtomicU64, Ordering},
 };
 
 use hudhook::*;
@@ -11,9 +11,14 @@ use windows::Win32::UI::{
 	Input::KeyboardAndMouse,
 	WindowsAndMessaging::{
 		CURSOR_SHOWING, CURSORINFO, GetCursorInfo, WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDOWN,
-		WM_LBUTTONUP, WM_RBUTTONDOWN, WM_RBUTTONUP,
+		WM_LBUTTONUP, WM_MOUSEMOVE, WM_RBUTTONDOWN, WM_RBUTTONUP,
 	},
 };
+
+static LAST_MOUSE_X: AtomicI32 = AtomicI32::new(0);
+static LAST_MOUSE_Y: AtomicI32 = AtomicI32::new(0);
+static DRAG_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+static DRAG_DISTANCE: AtomicU64 = AtomicU64::new(0);
 
 use crate::plugins::manager::PluginManager;
 
@@ -214,20 +219,49 @@ impl ImguiRenderLoop for RenderLoop {
 	) {
 		match umsg {
 			WM_LBUTTONDOWN => {
-				LEFT_MOUSE_DOWN.store(true, Ordering::Relaxed);
-				info!("EXAMINER_INPUT left_mouse=down");
+				if !LEFT_MOUSE_DOWN.swap(true, Ordering::Relaxed) {
+					let drag = DRAG_SEQUENCE.fetch_add(1, Ordering::Relaxed) + 1;
+					DRAG_DISTANCE.store(0, Ordering::Relaxed);
+					info!("EXAMINER_INPUT drag={} phase=start", drag);
+				}
 			}
 			WM_LBUTTONUP => {
-				LEFT_MOUSE_DOWN.store(false, Ordering::Relaxed);
-				info!("EXAMINER_INPUT left_mouse=up");
+				if LEFT_MOUSE_DOWN.swap(false, Ordering::Relaxed) {
+					info!(
+						"EXAMINER_INPUT drag={} phase=end distance_px={}",
+						DRAG_SEQUENCE.load(Ordering::Relaxed),
+						DRAG_DISTANCE.load(Ordering::Relaxed)
+					);
+				}
+			}
+			WM_MOUSEMOVE => {
+				let packed = _lparam.0 as u32;
+				let x = (packed as u16 as i16) as i32;
+				let y = ((packed >> 16) as u16 as i16) as i32;
+				let previous_x = LAST_MOUSE_X.swap(x, Ordering::Relaxed);
+				let previous_y = LAST_MOUSE_Y.swap(y, Ordering::Relaxed);
+				if LEFT_MOUSE_DOWN.load(Ordering::Relaxed) {
+					let dx = x - previous_x;
+					let dy = y - previous_y;
+					if dx != 0 || dy != 0 {
+						let step = dx.unsigned_abs() as u64 + dy.unsigned_abs() as u64;
+						let distance = DRAG_DISTANCE.fetch_add(step, Ordering::Relaxed) + step;
+						info!(
+							"EXAMINER_INPUT drag={} phase=move x={} y={} dx={} dy={} distance_px={}",
+							DRAG_SEQUENCE.load(Ordering::Relaxed), x, y, dx, dy, distance
+						);
+					}
+				}
 			}
 			WM_RBUTTONDOWN => {
-				RIGHT_MOUSE_DOWN.store(true, Ordering::Relaxed);
-				info!("EXAMINER_INPUT right_mouse=down");
+				if !RIGHT_MOUSE_DOWN.swap(true, Ordering::Relaxed) {
+					info!("EXAMINER_INPUT right_mouse=down");
+				}
 			}
 			WM_RBUTTONUP => {
-				RIGHT_MOUSE_DOWN.store(false, Ordering::Relaxed);
-				info!("EXAMINER_INPUT right_mouse=up");
+				if RIGHT_MOUSE_DOWN.swap(false, Ordering::Relaxed) {
+					info!("EXAMINER_INPUT right_mouse=up");
+				}
 			}
 			WM_KEYDOWN | WM_KEYUP => {
 				let down = umsg == WM_KEYDOWN;
@@ -239,14 +273,17 @@ impl ImguiRenderLoop for RenderLoop {
 					EXPERIMENT_TOGGLE_KEY_DOWN.store(down, Ordering::Relaxed);
 					info!("EXAMINER_INPUT f6={}", if down { "down" } else { "up" });
 				} else if key == KeyboardAndMouse::VK_CONTROL.0 {
-					CTRL_DOWN.store(down, Ordering::Relaxed);
-					info!("EXAMINER_INPUT ctrl={}", if down { "down" } else { "up" });
+					if CTRL_DOWN.swap(down, Ordering::Relaxed) != down {
+						info!("EXAMINER_INPUT ctrl={}", if down { "down" } else { "up" });
+					}
 				} else if key == KeyboardAndMouse::VK_SHIFT.0 {
-					SHIFT_DOWN.store(down, Ordering::Relaxed);
-					info!("EXAMINER_INPUT shift={}", if down { "down" } else { "up" });
+					if SHIFT_DOWN.swap(down, Ordering::Relaxed) != down {
+						info!("EXAMINER_INPUT shift={}", if down { "down" } else { "up" });
+					}
 				} else if key == KeyboardAndMouse::VK_MENU.0 {
-					ALT_DOWN.store(down, Ordering::Relaxed);
-					info!("EXAMINER_INPUT alt={}", if down { "down" } else { "up" });
+					if ALT_DOWN.swap(down, Ordering::Relaxed) != down {
+						info!("EXAMINER_INPUT alt={}", if down { "down" } else { "up" });
+					}
 				}
 			}
 			_ => return,
