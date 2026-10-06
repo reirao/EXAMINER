@@ -1,3 +1,4 @@
-target
-.vscode
-.helix
+/target/
+/logs/
+/bin/
+

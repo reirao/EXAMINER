@@ -1,63 +1,25 @@
-cargo-features = ["profile-rustflags"]
-
-[workspace]
-resolver = "2"
-members = [
-	"crates/detours",
-	"emtk_asset",
-	"emtk_core",
-	"emtk_framework",
-	"emtk_framework_types",
-	"emtk_launcher",
-]
-default-members = ["emtk_launcher"]
-
-[workspace.package]
-version = "0.1.0-dev"
-authors = ["reirao", "Megumin <megumin@megu.dev>", "ProffDea <deatea@riseup.net>"]
+[package]
+name = "examiner"
+version = "0.2.0"
 edition = "2024"
-documentation = "https://github.com/reirao/EXAMINER#readme"
-homepage = "https://github.com/reirao/EXAMINER"
+license = "MIT"
 repository = "https://github.com/reirao/EXAMINER"
-license = "MIT OR Apache-2.0"
+description = "Independent native Windows hooks for Exanima"
 
-[workspace.dependencies]
-anyhow = "1.0"
-detours-sys = { path = "./crates/detours" }
-emtk_framework_types = { path = "./emtk_framework_types" }
-image = { version = "0.25", default-features = false, features = [
-	"ico",
-	"png",
-] }
-open = "5.3"
-ron = "0.8"
-safer-ffi = { version = "0.1", default-features = false, features = [
-	"alloc",
-	"log",
-] }
-serde = { version = "1.0", features = ["derive"] }
-tempfile = "3.16"
-thiserror = "2.0"
-tokio = { version = "1", features = [
-	"io-std",
-	"fs",
-	"io-util",
-	"macros",
-	"rt-multi-thread",
-] }
-toml = "0.8"
-tracing = "0.1"
-tracing-appender = "0.2"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tracing-tracy = "0.11.4"
+[lib]
+name = "examiner_runtime"
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "examiner"
+path = "src/main.rs"
+
+[[bin]]
+name = "examiner_test_host"
+path = "src/test_host.rs"
+
+[dependencies]
 
 [profile.release]
-strip = true
-opt-level = "z"
-lto = true
-codegen-units = 1
-panic = "abort"
-rustflags = ["-Zlocation-detail=none"]
+strip = "debuginfo"
 
-[profile.release.package.emtk_framework]
-opt-level = 3
